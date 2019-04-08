@@ -38,7 +38,7 @@ cdata <- list(
     'season.week' = season_dat$season_week, 
     'season' = season_dat$season, 
     'year' = season_dat$year,
-    'week' = season_dat$year)
+    'week' = season_dat$week)
 training_inc <- IncidenceMatrix$new(data = dat, colData=cdata)
 training_inc$subset(cols = which(season_dat$season %in% training_seasons))
 
