@@ -19,9 +19,9 @@ season_dat <- tibble(
     week = as.numeric(substr(colnames(dat), 8, 9)),
     year = as.numeric(substr(colnames(dat), 2, 5)),
     season =  ifelse(
-        dat_week > 26,
-        paste0(dat_year, "/", dat_year+1),
-        paste0(dat_year-1, "/", dat_year))) %>%
+        week > 26,
+        paste0(year, "/", year+1),
+        paste0(year-1, "/", year))) %>%
     group_by(season) %>%
     mutate(season_week = row_number()) %>%
     ungroup()
@@ -30,19 +30,30 @@ season_dat <- tibble(
 dat <- dat[,-which(season_dat$season_week==53)]
 season_dat <- filter(season_dat, season_week != 53)
 
-## put into ForecastFramework
+### put into ForecastFramework
+
+## define training/testing seasons
 training_seasons <- paste0(2001:2015, "/", 2002:2016)
 testing_seasons <- paste0(2016:2018, "/", 2017:2019)
 
+## make column data list
 cdata <- list(
     'season.week' = season_dat$season_week, 
     'season' = season_dat$season, 
     'year' = season_dat$year,
     'week' = season_dat$week)
-training_inc <- IncidenceMatrix$new(data = dat, colData=cdata)
+
+## make metadata list
+adjancency_mat <- read.csv("data/GER_states_adjacency.csv", row.names = 1)
+metaData <- list(
+    adjancency_mat = adjancency_mat
+)
+
+## create objects
+training_inc <- IncidenceMatrix$new(data = dat, colData=cdata, metaData=metaData)
 training_inc$subset(cols = which(season_dat$season %in% training_seasons))
 
-testing_inc <- IncidenceMatrix$new(data = dat, colData=cdata)
+testing_inc <- IncidenceMatrix$new(data = dat, colData=cdata, metaData=metaData)
 testing_inc$subset(cols = which(season_dat$season %in% testing_seasons))
 
 saveRDS(training_inc, file="data/training_data.rds")

@@ -1,0 +1,17 @@
+"","Baden-Württemberg","Bavaria","Berlin","Brandenburg","Bremen","Hamburg","Hesse","Mecklenburg-Vorpommern","Lower Saxony","North Rhine-Westphalia","Rhineland-Palatinate","Saarland","Saxony","Saxony-Anhalt","Schleswig-Holstein","Thuringia"
+"Baden-Württemberg",1,1,0,0,0,0,1,0,0,0,1,0,0,0,0,0
+"Bavaria",1,1,0,0,0,0,1,0,0,0,0,0,1,0,0,1
+"Berlin",0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0
+"Brandenburg",0,0,1,1,0,0,0,1,1,0,0,0,1,1,0,0
+"Bremen",0,0,0,0,1,0,0,0,1,0,0,0,0,0,0,0
+"Hamburg",0,0,0,0,0,1,0,0,1,0,0,0,0,0,1,0
+"Hesse",1,1,0,0,0,0,1,0,1,1,1,0,0,0,0,1
+"Mecklenburg-Vorpommern",0,0,0,1,0,0,0,1,1,0,0,0,0,0,1,0
+"Lower Saxony",0,0,0,1,1,1,1,1,1,1,0,0,0,1,1,1
+"North Rhine-Westphalia",0,0,0,0,0,0,1,0,1,1,1,0,0,0,0,0
+"Rhineland-Palatinate",1,0,0,0,0,0,1,0,0,1,1,1,0,0,0,0
+"Saarland",0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0
+"Saxony",0,1,0,1,0,0,0,0,0,0,0,0,1,1,0,1
+"Saxony-Anhalt",0,0,0,1,0,0,0,0,1,0,0,0,1,1,0,1
+"Schleswig-Holstein",0,0,0,0,0,1,0,1,1,0,0,0,0,0,1,0
+"Thuringia",0,1,0,0,0,0,1,0,1,0,0,0,1,1,0,1
