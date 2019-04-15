@@ -44,9 +44,9 @@ cdata <- list(
     'week' = season_dat$week)
 
 ## make metadata list
-adjancency_mat <- read.csv("data/GER_states_adjacency.csv", row.names = 1)
+adjacency_mat <- read.csv("data/GER_states_adjacency.csv", row.names = 1)
 metaData <- list(
-    adjancency_mat = adjancency_mat
+    adjacency_mat = adjacency_mat
 )
 
 ## create objects
