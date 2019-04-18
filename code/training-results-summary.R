@@ -9,7 +9,7 @@ source("code/forecast-utils.R")
 training_data <- readRDS("data/training_data.rds")
 data_forecasted_from <- gather_data(training_data)
 
-data_forecasted <- read_csv("results/sarima1-training-results.csv")
+data_forecasted <- read_csv("results/seasonal-training-results.csv")
 
 ### make plots
 
