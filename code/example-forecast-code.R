@@ -3,17 +3,8 @@
 ### load utility script
 source("code/forecast-utils.R")
 
-### load in ForecastFramework Model
-library(RCurl)
-# Function of Source Github Models
-source_github <- function(u) {
-    # read script lines from website and evaluate
-    script <- getURL(u, ssl.verifypeer = FALSE)
-    eval(parse(text = script),envir=.GlobalEnv)
-}  
-# Source R6 SARIMATD model files
-source_github('https://raw.githubusercontent.com/reichlab/forecast-framework-demos/master/models/ContestModel.R')
-source_github('https://raw.githubusercontent.com/reichlab/forecast-framework-demos/master/models/SARIMATD1Model.R')
+source("models/ContestModel.R")
+source("models/sarimaTD-model.R")
 
 ### define SARIMA model
 nsim <- 1000 # Number of SARIMA simulations 

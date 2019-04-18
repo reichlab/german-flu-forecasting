@@ -21,7 +21,8 @@ season_dat <- tibble(
     season =  ifelse(
         week > 26,
         paste0(year, "/", year+1),
-        paste0(year-1, "/", year))) %>%
+        paste0(year-1, "/", year)),
+    time.in.year = year + (week)/52) %>%
     group_by(season) %>%
     mutate(season_week = row_number()) %>%
     ungroup()
@@ -46,7 +47,8 @@ cdata <- list(
 ## make metadata list
 adjacency_mat <- read.csv("data/GER_states_adjacency.csv", row.names = 1)
 metaData <- list(
-    adjacency_mat = adjacency_mat
+    adjacency_mat = adjacency_mat,
+    max.year.time = 365
 )
 
 ## create objects
@@ -54,7 +56,6 @@ training_inc <- IncidenceMatrix$new(data = dat, colData=cdata, metaData=metaData
 training_inc$subset(cols = which(season_dat$season %in% training_seasons))
 
 testing_inc <- IncidenceMatrix$new(data = dat, colData=cdata, metaData=metaData)
-testing_inc$subset(cols = which(season_dat$season %in% testing_seasons))
 
 saveRDS(training_inc, file="data/training_data.rds")
 saveRDS(testing_inc, file="data/testing_data.rds")
