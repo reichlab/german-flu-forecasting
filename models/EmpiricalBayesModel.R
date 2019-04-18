@@ -4,7 +4,7 @@ EmpiricalBayesModel <- R6Class(
     private = list(
         
         # attributes
-        .nTransformations = 3, # number of transformations of each historical season to generate the prior
+        .nTransformations = 1000, # number of transformations of each historical season to generate the prior
         .verbose = F,
         .hyperparams = data.frame("mu_m" = rep(1,16), # default min peak week param
             "mu_M" = rep(52,16), # default max peak week param
@@ -73,8 +73,8 @@ EmpiricalBayesModel <- R6Class(
             training_data_long <- gather_data(incmat = training_data$mat)
             
             # here is where you can define the training and test data
-            dat <- training_data_long %>% filter(season_year %in% c("2001-2002","2002-2003","2003-2004","2004-2005","2005-2006")) # interesting thing to mention to Josh later location %in% c("Berlin","Saxony"))
-            private$.testData = training_data_long %>% filter(season_year %in% c("2006-2007")) # test on all cities for the years selected
+            dat <- training_data_long; # %>% filter(season_year %in% c("2001-2002","2002-2003","2003-2004","2004-2005","2005-2006")) # interesting thing to mention to Josh later location %in% c("Berlin","Saxony"))
+            private$.testData = training_data_long %>% filter(season_year %in% c("2006-2007")); # test on all cities for the years selected
             
             output_noise_sd <- vector()
             output_peak_height <- vector()
@@ -243,20 +243,21 @@ EmpiricalBayesModel <- R6Class(
             
             set.seed(private$.seed)
             
-            yrs_curr = private$.currentData$mat[1,]
+            #yrs_curr = private$.currentData$mat
             yrs_curr_regions = private$.currentData$rnames;
             frs_curr = private$.prior
             
             for(i in c(1:nrow(private$.currentData$mat)))
             {
                 frs_curr_inx = which(private$.priorRegions == yrs_curr_regions[i])
+                yrs_curr = private$.currentData$mat[i,]
                 
                 for (j in 1:length(frs_curr_inx)){
                     
                     frs_curr = private$.prior[frs_curr_inx[j],]
                     sigma <- private$.priorSigma[frs_curr_inx[j]]
-                    weight <- prod(dnorm(yrs_curr, mean = frs_curr, sd = sigma))
-                    
+                    weight <- prod(dnorm(yrs_curr, mean = frs_curr, sd = sigma)) #sigma))
+  
                     v_1 = c()
                     for(a in c(1:length(yrs_curr))){
                         v_1[a] = yrs_curr[a]
@@ -297,7 +298,11 @@ EmpiricalBayesModel <- R6Class(
                 post_inx = which(private$.priorRegions == private$.currentData$rnames[i])
                 
                 #private$.weights = private$.weights/sum(na.omit(private$.weights))
-                private$.weights[post_inx] = private$.weights[post_inx]/sum(private$.weights[post_inx])
+                # TODO Bad normalization when dnorm is too small
+                if(sum(private$.weights[post_inx]) == 0)
+                  private$.weights[post_inx] = 0;
+                if(sum(private$.weights[post_inx]) > 0) 
+                  private$.weights[post_inx] = private$.weights[post_inx]/sum(private$.weights[post_inx])
                 print(paste("Weight sum for region: ", private$.currentData$rnames[i]))
                 print(sum(private$.weights[post_inx]))
                 for(j in c(1:length(post_inx))){
@@ -330,7 +335,7 @@ EmpiricalBayesModel <- R6Class(
         
         # methods
         
-        fit = function(fitData,regions,n=3, verbose=F){
+        fit = function(fitData,regions,n=1000, verbose=F){
             
             print("[fit]")
             
@@ -349,7 +354,7 @@ EmpiricalBayesModel <- R6Class(
             
         },
         
-        forecast = function(newdata){
+        forecast = function(newdata, steps = 6){
             
             print("[forecast]")
             private$.currentData = newdata;
@@ -357,6 +362,7 @@ EmpiricalBayesModel <- R6Class(
             private$.generatePosterior();
             # call .calculateForecast()
             private$.calculateForecast();
+            return(private$.forecast);
             
         },
         
