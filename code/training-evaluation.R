@@ -6,13 +6,21 @@ library(ForecastFramework)
 library(dplyr)
 source("code/forecast-utils.R") ## helper functions for tidying forecast data
 
-## source model code: LOAD YOUR MODELS HERE
-#source("models/ContestModel.R")
+## TO USE THIS CODE, PLEASE READ THE FOLLOWING INSTRUCTIONS:
+
+## 1. ADD YOUR MODEL SOURCE CODE BELOW
+## 2. SEARCH FOR THE $new CALL AND REPLACE YOUR MODEL NAME THERE
+## 3. DOES YOUR MODEL FIT ONCE OR EACH TIME? CHANGE THIS_MODEL_FITS_ONCE APPROPRIATELY.
+## 4. CHANGE THE MODEL_ABBR VARIABLE TO BE SOMETHING REASONABLE FOR YOUR MODEL
+
+## source model code 
+source("models/ContestModel.R")
 #source("models/sarimaTD-model.R")
-source("models/SeasonalMedianModel.R")
+#source("models/SeasonalMedianModel.R")
+source("models/EmpiricalBayesModel.R")
 
 THIS_MODEL_FITS_ONCE <- TRUE
-MODEL_ABBR <- "smm"
+MODEL_ABBR <- "empirical-bayes"
 
 STEPS <- 6
 
@@ -37,7 +45,7 @@ if(THIS_MODEL_FITS_ONCE){
     
     ##  initialize model
     ## TODO: need to make this line be automatically called
-    this_model <- SeasonalMedianModel$new()
+    this_model <- EmpiricalBayesModel$new()
     
     ##  fit model to data
     this_model$fit(once_training_data)
