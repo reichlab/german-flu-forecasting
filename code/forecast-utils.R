@@ -15,13 +15,16 @@ gather_forecast <- function(fcast, timezero) {
             timezero = MMWRweek2Date(timezero$year, timezero$epiweek),
             step = as.numeric(step),
             date = timezero + 7*step,
-            pred_median = as.vector(apply(tmp_forecast$data$arr, FUN=function(x) median(x, na.rm=TRUE), MARGIN =c(1,2))),
-            pred_95_lb = as.vector(fcast$quantile(0.025,na.rm=TRUE)$mat),
-            pred_80_lb = as.vector(fcast$quantile(0.05,na.rm=TRUE)$mat),
-            pred_50_lb = as.vector(fcast$quantile(0.25,na.rm=TRUE)$mat),
-            pred_50_ub = as.vector(fcast$quantile(0.75,na.rm=TRUE)$mat),
-            pred_80_ub = as.vector(fcast$quantile(0.95,na.rm=TRUE)$mat),
-            pred_95_ub = as.vector(fcast$quantile(0.975,na.rm=TRUE)$mat)
+            ## the apply and quantile functions below each return a locations x steps matrix
+            ## using as.vector(t(...)) returns a vector that has each location with steps 1-6
+            ## probably would be better to do these computations separately and bind together, to ensure no mismatches
+            pred_median = as.vector(t(apply(fcast$data$arr, FUN=function(x) median(x, na.rm=TRUE), MARGIN = c(1,2)))),
+            pred_95_lb = as.vector(t(fcast$quantile(0.025,na.rm=TRUE)$mat)),
+            pred_80_lb = as.vector(t(fcast$quantile(0.05,na.rm=TRUE)$mat)),
+            pred_50_lb = as.vector(t(fcast$quantile(0.25,na.rm=TRUE)$mat)),
+            pred_50_ub = as.vector(t(fcast$quantile(0.75,na.rm=TRUE)$mat)),
+            pred_80_ub = as.vector(t(fcast$quantile(0.95,na.rm=TRUE)$mat)),
+            pred_95_ub = as.vector(t(fcast$quantile(0.975,na.rm=TRUE)$mat))
         )
     # preds_df$timezero <- MMWRweek2Date(timezero$year, timezero$epiweek)
     # preds_df$date <- MMWRweek2Date(rep(timezero$year, nrow(preds_df)), timezero$epiweek+preds_df$step)

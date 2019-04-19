@@ -67,8 +67,10 @@ seasonalGAM <- R6Class(
                 
                 ## now simulate from normal deviates with mean as in fv
                 ## and estimated scale...
+                ## tmp is a steps x n_sim matrix
                 tmp <- matrix(rnorm(length(fv), mean=fv, sd=sqrt(fm$sig2)), nrow=nrow(fv), ncol(fv))
                 
+                ## sim_forecasts is a nmodels x steps x n_sim
                 sim_forecasts[model_idx, , ] <- tmp
             }
             private$output <- SimulatedIncidenceMatrix$new(sim_forecasts)
