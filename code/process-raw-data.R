@@ -5,7 +5,7 @@
 library(ForecastFramework)
 library(dplyr)
 
-dat <- read.table("data/raw-rki-data.csv", sep="\t", skip=1, header=TRUE, fileEncoding="UTF-16LE", row.names = 1)
+dat <- read.table("data/raw-rki-data-20190419.csv", sep="\t", skip=1, header=TRUE, fileEncoding="UTF-16LE", row.names = 1)
 
 ## replace NAs with 0s
 na.idx <- which(is.na(dat), arr.ind=TRUE)
@@ -15,21 +15,28 @@ dat[na.idx] <- 0
 dat <- dat[-nrow(dat),]
 
 ## make season metadata
+
+## this assumes that the "w.e." notation in the original file stands for week end
 season_dat <- tibble(
-    week = as.numeric(substr(colnames(dat), 8, 9)),
-    year = as.numeric(substr(colnames(dat), 2, 5)),
-    season =  ifelse(
-        week > 26,
-        paste0(year, "/", year+1),
-        paste0(year-1, "/", year)),
-    time.in.year = year + (week)/52) %>%
-    group_by(season) %>%
-    mutate(season_week = row_number()) %>%
-    ungroup()
+    season.first.year = as.numeric(substr(colnames(dat), 2, 5)),
+    season =  paste0(season.first.year, "/", season.first.year + 1),
+    season.week = as.numeric(substr(colnames(dat), 12, 13)),
+    week.end.month = as.numeric(substr(colnames(dat), 20, 21)),
+    week.end.day = as.numeric(substr(colnames(dat), 23, 24)),
+    ## logic for year is:
+    ##    if it's an early month then it's second year in season
+    ##    if it's a late month then it's first year in season
+    ##    if it's a mid-year month then if it's a low season-week it's the first year and otherwise the second
+    week.end.year = ifelse(week.end.month <= 5, season.first.year+1,
+                           ifelse(week.end.month >= 8, season.first.year,
+                                  ifelse(season.week < 10, season.first.year, season.first.year+1))),
+    week.end.date = as.Date(paste(week.end.year, week.end.month, week.end.day, sep="-")),
+    time.in.year = week.end.year + as.numeric(strftime(week.end.date, format="%j"))/as.numeric(strftime(paste0(week.end.year, "-12-31"), format="%j"))
+    ) 
 
 ## drop mid-summer week 53s
-dat <- dat[,-which(season_dat$season_week==53)]
-season_dat <- filter(season_dat, season_week != 53)
+dat <- dat[,-which(season_dat$season.week==53)]
+season_dat <- filter(season_dat, season.week != 53)
 
 ### put into ForecastFramework
 
@@ -39,10 +46,11 @@ testing_seasons <- paste0(2016:2018, "/", 2017:2019)
 
 ## make column data list
 cdata <- list(
-    'season.week' = season_dat$season_week, 
+    'season.week' = season_dat$season.week, 
     'season' = season_dat$season, 
-    'year' = season_dat$year,
-    'week' = season_dat$week)
+    'year' = season_dat$week.end.year,
+    'week.end.date' = season_dat$week.end.date,
+    'time.in.year' = season_dat$time.in.year)
 
 ## make metadata list
 adjacency_mat <- read.csv("data/GER_states_adjacency.csv", row.names = 1)
