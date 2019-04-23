@@ -14,8 +14,7 @@ dat[na.idx] <- 0
 ## drop "Unknown" state
 dat <- dat[-nrow(dat),]
 
-## make season metadata
-
+### make season metadata
 ## this assumes that the "w.e." notation in the original file stands for week end
 season_dat <- tibble(
     season.first.year = as.numeric(substr(colnames(dat), 2, 5)),
@@ -33,6 +32,9 @@ season_dat <- tibble(
     week.end.date = as.Date(paste(week.end.year, week.end.month, week.end.day, sep="-")),
     time.in.year = week.end.year + as.numeric(strftime(week.end.date, format="%j"))/as.numeric(strftime(paste0(week.end.year, "-12-31"), format="%j"))
     ) 
+
+## rename columns of IncMat
+colnames(dat) <- season_dat$week.end.date
 
 ## drop mid-summer week 53s
 dat <- dat[,-which(season_dat$season.week==53)]
