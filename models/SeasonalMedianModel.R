@@ -61,7 +61,7 @@ SeasonalMedianModel<-R6Class(
                     (private$newdata$colData$time.in.year) %%
                         private$newdata$metaData$max.year.time
                 ) + 1
-            if('yr' %in% names(private$newdata$colData)){
+            if('year' %in% names(private$newdata$colData)){
                 private$newdata$colData$year[private$newdata$time.in.year==1] =
                     private$newdata$colData$year[private$newdata$time.in.year==1] + 1
             }

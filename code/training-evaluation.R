@@ -2,6 +2,9 @@
 ## Nicholas Reich
 ## April 2019
 
+## protecting against loading .RData files
+rm(list = ls())
+
 library(ForecastFramework)
 library(dplyr)
 source("code/forecast-utils.R") ## helper functions for tidying forecast data
@@ -15,12 +18,12 @@ source("code/forecast-utils.R") ## helper functions for tidying forecast data
 
 ## source model code 
 source("models/ContestModel.R")
-source("models/sarimaTDModel.R")
-#source("models/seasonalGAM.R")
+#source("models/sarimaTDModel.R")
+source("models/seasonalGAM.R")
 #source("models/EmpiricalBayesModel.R")
 
 THIS_MODEL_FITS_ONCE <- TRUE
-MODEL_ABBR <- "sarima"
+MODEL_ABBR <- "seasonalGAM"
 
 STEPS <- 6
 
@@ -45,7 +48,7 @@ if(THIS_MODEL_FITS_ONCE){
     
     ##  initialize model
     ## TODO: need to make this line be automatically called
-    this_model <- sarimaTDModel$new()
+    this_model <- seasonalGAM$new()
     
     ##  fit model to data
     this_model$fit(once_training_data)
