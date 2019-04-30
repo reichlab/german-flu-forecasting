@@ -2,30 +2,24 @@
 ## Nicholas Reich
 ## April 2019
 
-## protecting against loading .RData files
-rm(list = ls())
+rm(list = ls()) ## protecting against loading stray .RData files
+
+## TO USE THIS CODE, PLEASE :
+##  1. DEFINE THE MODEL_ABBR TO BE THE NAME OF YOUR MODEL
+##  2. ENSURE THAT YOUR MODEL FOLLOWS THE GUIDELINES IN models/README.md
+
+MODEL_ABBR <- "sarimaTDModel"
 
 library(ForecastFramework)
 library(dplyr)
 source("code/forecast-utils.R") ## helper functions for tidying forecast data
 
-## TO USE THIS CODE, PLEASE READ THE FOLLOWING INSTRUCTIONS:
-
-## 1. ADD YOUR MODEL SOURCE CODE BELOW
-## 2. SEARCH FOR THE $new CALLS AND REPLACE YOUR MODEL NAME THERE
-## 3. DOES YOUR MODEL FIT ONCE OR EACH TIME? CHANGE THIS_MODEL_FITS_ONCE APPROPRIATELY.
-## 4. CHANGE THE MODEL_ABBR VARIABLE TO BE SOMETHING REASONABLE FOR YOUR MODEL
+STEPS <- 6
 
 ## source model code 
 source("models/ContestModel.R")
-#source("models/sarimaTDModel.R")
-source("models/seasonalGAM.R")
-#source("models/EmpiricalBayesModel.R")
-
-THIS_MODEL_FITS_ONCE <- TRUE
-MODEL_ABBR <- "seasonalGAM"
-
-STEPS <- 6
+filename <- paste0("models/", MODEL_ABBR, ".R")
+source(filename)
 
 ### load training data
 training_data <- readRDS("data/training_data.rds")
@@ -36,8 +30,10 @@ last_season <- "2014/2015"
 ## TODO: REMOVE once the whole script is working
 ## training_data$subset(rows=13:15)
 
+eval(parse(text=paste0("this_model <- ", MODEL_ABBR, "$new()")))
+
 ### training evaluation for once-fit model
-if(THIS_MODEL_FITS_ONCE){
+if(this_model$fit_once){
     
     ## subset data up to (not inclusive) week one of season s
     first_fitting_week <- list(season=first_season_for_fitting, season.week=1)
@@ -47,9 +43,8 @@ if(THIS_MODEL_FITS_ONCE){
     once_training_data <- training_data$subset(cols = first_col_idx:last_col_idx, mutate = FALSE)
     
     ##  initialize model
-    ## TODO: need to make this line be automatically called
-    this_model <- seasonalGAM$new()
-    
+    eval(parse(text=paste0("this_model <- ", MODEL_ABBR, "$new()")))
+
     ##  fit model to data
     this_model$fit(once_training_data)
     
@@ -73,36 +68,37 @@ if(THIS_MODEL_FITS_ONCE){
     }
 }
 
-if(!THIS_MODEL_FITS_ONCE){
+if(!this_model$fit_once){
 
-### training process for each-fit model
-    ## subset data up to (not inclusive) week one of season s
+    ### training process for each-fit model
+    
+    ## establish the first week to fit the model to
     first_fitting_week <- list(season=first_season_for_fitting, season.week=1)
     last_fitting_week <- list(season=last_season, season.week=52)
     first_col_idx <- which(training_data$colData$season.week==first_fitting_week$season.week & training_data$colData$season==first_fitting_week$season)
-    last_col_idx <- which(training_data$colData$season.week==last_fitting_week$season.week & training_data$colData$season==last_fitting_week$season)
-    once_training_data <- training_data$subset(cols = first_col_idx:last_col_idx, mutate = FALSE)
-    
-    ##  initialize model
-    ## TODO: need to make this line be automatically called
-    this_model <- seasonalGAM$new()
-    
-    ##   foreach week in season s, make forecast and save
+
+    ##   foreach week in season s, 
+    ##      subset data, fit model, make forecast and append
     for(sw in 1:52){ 
         
+        # last week for fitting model (MINUS 1 TO BE NOT INCLUSIVE!)
+        last_col_idx <- which(training_data$colData$season.week==sw & training_data$colData$season==eval_season) - 1
+        each_training_data <- training_data$subset(cols = first_col_idx:last_col_idx, mutate = FALSE)
+        
+        ##  initialize model
+        eval(parse(text=paste0("this_model <- ", MODEL_ABBR, "$new()")))
+        
         ##  fit model to data
-        this_model$fit(once_training_data)
+        this_model$fit(each_training_data)
         
         ## make data to forecast from
-        last_col_idx <- which(training_data$colData$season.week==sw & training_data$colData$season==eval_season)
         tmp_timezero <- list(
             year = training_data$colData$year[last_col_idx], 
             epiweek = training_data$colData$week[last_col_idx] 
         )
-        tmp_forecast_data <- training_data$subset(cols = first_col_idx:last_col_idx, mutate = FALSE)
-        
+
         ## make forecast
-        tmp_forecast <- this_model$forecast(tmp_forecast_data, steps=STEPS)
+        tmp_forecast <- this_model$forecast(each_training_data, steps=STEPS)
         
         ## create, rbind tidy forecast data
         tmp_fcast_data <- gather_forecast(tmp_forecast, tmp_timezero)

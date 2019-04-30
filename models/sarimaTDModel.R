@@ -19,7 +19,8 @@ sarimaTDModel <- R6Class(
         .data = NULL,        ## every model should have this
         .models = list(),    ## specific to models that are fit separately for each location
         .nsim = 1000,        ## models that are simulating forecasts need this
-        .period = integer(0) ## specific to SARIMA models
+        .period = integer(0),## specific to SARIMA models
+        .fit_once = TRUE     ## specifies whether the model is fit once at beginning of season or not
     ),
     public = list(
         ## data will be MatrixData
@@ -102,6 +103,12 @@ sarimaTDModel <- R6Class(
             if(!missing(value))
                 stop("Writing directly to the model period is not allowed.")
             return(private$.period)
+        },
+        fit_once = function(value) {
+            ## use this form when you want this parameter to be un-modifiable
+            if(!missing(value))
+                stop("Writing directly to the model period is not allowed.")
+            return(private$.fit_once)
         }
     )
 )
