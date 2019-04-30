@@ -9,6 +9,9 @@ from torch.autograd import Variable
 
 import torch
 import torch.nn as nn
+import sys
+sys.path.insert(0, './models/')
+
 from models import AR, VAR, GAR, RNN
 from models import CNNRNN, CNNRNN_Res
 import numpy as np
