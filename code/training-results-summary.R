@@ -58,9 +58,9 @@ ggplot(data=filter(data_forecasted, timezero==as.Date("2016-01-17")), aes(x=date
     scale_x_date(limits=as.Date(c("2015-10-01", "2016-06-01"))) +
     ggtitle("Forecasts from 2016 epiweek 3")
 
-ggplot(data=filter(data_forecasted[data_forecasted$location == "Berlin",], timezero==as.Date("2016-01-17")), aes(x=date)) +
-  geom_line(data=data_forecasted_from[data_forecasted_from$location == "Berlin",], aes(y=value)) + 
-  geom_point(data=data_forecasted_from[data_forecasted_from$location == "Berlin",], aes(y=value)) +
+ggplot(data=filter(data_forecasted[data_forecasted$location == "Hesse",], timezero==as.Date("2016-01-17")), aes(x=date)) +
+  geom_line(data=data_forecasted_from[data_forecasted_from$location == "Hesse",], aes(y=value)) + 
+  geom_point(data=data_forecasted_from[data_forecasted_from$location == "Hesse",], aes(y=value)) +
   geom_line(aes(y=pred_median), color="red") + 
   geom_point(aes(y=pred_median), color="red") + 
   geom_ribbon(aes(ymin = pred_50_lb, ymax = pred_50_ub), alpha = 0.2, fill="red") +
