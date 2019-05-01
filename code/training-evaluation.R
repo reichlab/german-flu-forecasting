@@ -33,7 +33,7 @@ last_season <- "2014/2015"
 eval(parse(text=paste0("this_model <- ", MODEL_ABBR, "$new()")))
 
 ### training evaluation for once-fit model
-if(this_model$fit_once){
+if(TRUE){
     
     ## subset data up to (not inclusive) week one of season s
     first_fitting_week <- list(season=first_season_for_fitting, season.week=1)
@@ -68,7 +68,7 @@ if(this_model$fit_once){
     }
 }
 
-if(!this_model$fit_once){
+if(FALSE){
 
     ### training process for each-fit model
     

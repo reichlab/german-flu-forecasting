@@ -93,7 +93,8 @@ def train_dl(data,adjacency_matrix,model_name,save_name,step_ahead,epochs):
   # --- CNNRNN option
   parser.add_argument('--sim_mat', type=str,help='file of similarity measurement (Required for CNNRNN, CNN)')
   parser.add_argument('--hidRNN', type=int, default=50, help='number of RNN hidden units')
-  parser.add_argument('--residual_window', type=int, default=4,help='The window size of the residual component')
+  parser.add_argument('--residual_window', type=int, default=8
+  ,help='The window size of the residual component')
   parser.add_argument('--ratio', type=float, default=1.,help='The ratio between CNNRNN and residual')
   parser.add_argument('--output_fun', type=str, default=None, help='the output function of neural net')
   # --- Logging option
@@ -109,7 +110,7 @@ def train_dl(data,adjacency_matrix,model_name,save_name,step_ahead,epochs):
   parser.add_argument('--batch_size', type=int, default=128, metavar='N',help='batch size')
   # --- Misc prediction option
   parser.add_argument('--horizon', type=int, default=12, help='predict horizon')
-  parser.add_argument('--window', type=int, default=10,help='window size')
+  parser.add_argument('--window', type=int, default=20,help='window size')
   parser.add_argument('--metric', type=int, default=1, help='whether (1) or not (0) normalize rse and rae with global variance/deviation ')
   parser.add_argument('--normalize', type=int, default=0, help='the normalized method used, detail in the utils.py')
   
@@ -208,7 +209,7 @@ def mytest(data,adjacency_matrix,model_name,save_name,horizon, test_dat=None ):
   # --- CNNRNN option
   parser.add_argument('--sim_mat', type=str,help='file of similarity measurement (Required for CNNRNN, CNN)')
   parser.add_argument('--hidRNN', type=int, default=50, help='number of RNN hidden units')
-  parser.add_argument('--residual_window', type=int, default=4,help='The window size of the residual component')
+  parser.add_argument('--residual_window', type=int, default=8,help='The window size of the residual component')
   parser.add_argument('--ratio', type=float, default=1.,help='The ratio between CNNRNN and residual')
   parser.add_argument('--output_fun', type=str, default=None, help='the output function of neural net')
   # --- Logging option
@@ -224,7 +225,7 @@ def mytest(data,adjacency_matrix,model_name,save_name,horizon, test_dat=None ):
   parser.add_argument('--batch_size', type=int, default=128, metavar='N',help='batch size')
   # --- Misc prediction option
   parser.add_argument('--horizon', type=int, default=1, help='predict horizon')
-  parser.add_argument('--window', type=int, default=10 ,help='window size')
+  parser.add_argument('--window', type=int, default=20 ,help='window size')
   parser.add_argument('--metric', type=int, default=1, help='whether (1) or not (0) normalize rse and rae with global variance/deviation ')
   parser.add_argument('--normalize', type=int, default=0, help='the normalized method used, detail in the utils.py')
   

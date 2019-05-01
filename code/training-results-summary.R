@@ -8,7 +8,7 @@ source("code/forecast-utils.R")
 training_data <- readRDS("data/training_data.rds")
 data_forecasted_from <- gather_data(training_data)
 
-data_forecasted <- read_csv("results/seasonalGAM-training-results.csv") %>%
+data_forecasted <- read_csv("results/DL4EPI-training-results.csv") %>%
 #data_forecasted <- fcast_data %>%
     left_join(dplyr::select(data_forecasted_from, location, date, value)) %>%
     rename(truth=value) %>%
