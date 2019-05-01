@@ -10,7 +10,12 @@ from torch.autograd import Variable
 import torch
 import torch.nn as nn
 import sys
-sys.path.insert(0, './models/')
+import os
+cwd = os.getcwd()
+print (cwd + "/models/pyfiles/models/")
+sys.path.insert(0, cwd +"/models/pyfiles/")
+
+
 
 from models import AR, VAR, GAR, RNN
 from models import CNNRNN, CNNRNN_Res
