@@ -8,7 +8,7 @@ rm(list = ls()) ## protecting against loading stray .RData files
 ##  1. DEFINE THE MODEL_ABBR TO BE THE NAME OF YOUR MODEL
 ##  2. ENSURE THAT YOUR MODEL FOLLOWS THE GUIDELINES IN models/README.md
 
-MODEL_ABBR <- "sarimaTDModel"
+MODEL_ABBR <- "DL4EPI"
 
 library(ForecastFramework)
 library(dplyr)
