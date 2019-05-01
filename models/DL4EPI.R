@@ -16,7 +16,8 @@ DL4EPI <- R6Class(
     .data = NULL,        ## every model should have this
     .models = list(),    ## specific to models that are fit separately for each location
     .nsim = 1000,        ## models that are simulating forecasts need this
-    .STEPS = 6
+    .STEPS = 6,
+    .fit_once = TRUE 
   ),
   public = list(
     setSteps = function(step_ahead){
@@ -48,6 +49,8 @@ DL4EPI <- R6Class(
         ## convert y vector to time series data type
       #print (private$.data)
       y_ts <- ts(as.vector(private$.data$mat), frequency = private$.period)
+      
+      
       print (length(y_ts))
       print ("--------")
         ## fit sarimaTD with 'fit_sarima()' from sarimaTD package
@@ -131,6 +134,12 @@ DL4EPI <- R6Class(
     STEPS = function(value) {
       ## use this form when you want to be able to change this parameter
       private$defaultActive(type="private", ".STEPS", val=value)
+    },
+    fit_once = function(value) {
+      ## use this form when you want this parameter to be un-modifiable
+      if(!missing(value))
+        stop("Writing directly to the model period is not allowed.")
+      return(private$.fit_once)
     }
   ),
   lock_objects = FALSE

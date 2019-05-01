@@ -12,7 +12,6 @@ import torch.nn as nn
 import sys
 import os
 cwd = os.getcwd()
-print (cwd + "/models/pyfiles/models/")
 sys.path.insert(0, cwd +"/models/pyfiles/")
 
 
