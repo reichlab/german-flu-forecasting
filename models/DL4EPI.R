@@ -6,7 +6,7 @@ library(reticulate)
 
 #SET THIS TO YOUR PYTHON VERSION
 use_python("/Users/gcgibson/anaconda/bin/python2.7")
-source_python("./models/main.py")
+source_python("./models/pyfiles/main.py")
 
 
 
