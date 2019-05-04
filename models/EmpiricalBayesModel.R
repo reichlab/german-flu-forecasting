@@ -4,6 +4,7 @@ EmpiricalBayesModel <- R6Class(
   
   # attributes
   .nTransformations = 1000, # number of transformations of each historical season to generate the prior
+  .nSimulations = 1000, # number of simulations to return in SimulatedIncidenceArray
   .verbose = F,
   .hyperparams = data.frame("mu_m" = rep(1,16), # default min peak week param
                             "mu_M" = rep(52,16), # default max peak week param
@@ -27,50 +28,35 @@ EmpiricalBayesModel <- R6Class(
   .priorYears = NULL,
   .priorSigma = NULL, # These are extracted along with the priors
   .posterior = NULL, # made this the potential forcasts (posterior multiplied by weights)
-  .posteriorMedian = NULL, # posterior multiplied by median of weights
-  .posterior50Lower = NULL, # posterior multiplied by lower bound of weights
-  .posterior50Upper = NULL, # posterior multiplied by upper bound of weights
   .seed = 7, # the default seed is 7 (or perhaps sample the seed if the user doesn't define one)
+  .steps = 6,
   .weights = NULL, # weights
   .unweightedPosterior = NULL, # posterior estimates without weights
   .regions = NULL,
-  .variance = NULL,
-  
-  .forecast = NULL, # returns a 1 x 52 IncidenceMatrix for now
-  .forecastMedian = NULL, # IM for Median
-  .forecast50LB = NULL, # IM for 50% CI Lower Bound
-  .forecast50UB = NULL, # IM for 50% CI Upper Bound
-  .forecastObject = NULL, # ForecastFramework::Forecast 
-  # methods
-  
+  .forecast = array(c(rep(NA,16), rep(NA,52), rep(NA,1000)),dim=c(16,52,1000)), 
+  .forecastSIM = NULL,
   .gatherData = function(incmat){
     print("[.gatherData]")
     incdat <- data.frame(as.table(t(incmat))) %>% #$mat))) %>%
       rename(textdate = Var1, location = Var2, value=Freq) %>%
       mutate(
-        year = as.numeric(substr(textdate, 2, 5)),
-        epiweek = as.numeric(substr(textdate, 8, 9)),
-        date = MMWRweek::MMWRweek2Date(year, epiweek)
+        year = as.numeric(MMWRweek(textdate)$MMWRyear),
+        epiweek = as.numeric(MMWRweek(textdate)$MMWRweek),
+        date = textdate
       ) %>% 
       filter(!(year == 2015 & epiweek == 26)) %>% 
       filter(!(year == 2009 & epiweek == 26)) %>% 
       filter(!(year == 2004 & epiweek == 26)) %>% 
       mutate(season_week = epiweek - 26) %>% 
       mutate(season_year = as.character(year))
+    
     incdat$season_week <- ifelse(incdat$season_week <= 0, incdat$season_week + 53, incdat$season_week)
     incdat$season_year <- ifelse(incdat$season_week <= 26,
                                  paste0(incdat$season_year, "-", as.character(as.numeric(incdat$season_year) + 1)),
                                  paste0(as.character(as.numeric(incdat$season_year) - 1), "-", incdat$season_year))
     return(incdat) 
-  }
-  ,
-  
-  .weightedVariance = function(vec, wts){
-    m_star <- weighted.mean(vec, wts)
-    wvar <- sum(wts*(vec-m_star)^2)
-    return(wvar)
   },
-  
+
   .extractShapesAndHyperparams = function(){
     print("[.extractShapesAndHyperparams]"); 
     require(genlasso)
@@ -80,13 +66,10 @@ EmpiricalBayesModel <- R6Class(
     
     training_data <- private$.historicalData;
     private$.regions <- training_data$rnames;
-    
     training_data_long <- private$.gatherData(incmat = training_data$mat)
     
-    # here is where you can define the training and test data
-    dat <- training_data_long  #%>% filter(season_year %in% c("2004-2005","2005-2006")) #,"2008-2009","2009-2010","2010-2011","2011-2012","2012-2013","2014-2015"))
-    #private$.testData = training_data_long %>% filter(season_year %in% c("2006-2007")) # test on all cities for the years selected
-    
+    dat <- training_data_long  
+
     output_peak_height <- vector()
     output_peak_week <- vector()
     output_qt_trajectories <- data.frame(1:52)
@@ -110,7 +93,7 @@ EmpiricalBayesModel <- R6Class(
         
         temp_dat <- dat %>% filter(season_year == Y) %>% filter(location == L) %>% arrange(season_week)
         if((length(temp_dat$value) < 10)){
-          print("not enough data in this season. skip")
+          print(paste(paste("[.extractShapesAndHyperparams] Not enough data in this season. Skipping...",Y),L))
           next
         }
         
@@ -190,9 +173,6 @@ EmpiricalBayesModel <- R6Class(
     
     for(k in c(1:private$.nTransformations))
     {
-      # note that here we do not sample within regions, I'm just assuming that because the
-      # sampling is random, each region gets approximately the same number of entries
-      # in its prior
       f_r_index = sample(1:nrow(private$.filteredData),1);# draw shape index
       regions = c(regions,as.character(private$.filteredData[f_r_index,]$region))
       
@@ -202,17 +182,14 @@ EmpiricalBayesModel <- R6Class(
       this_theta_m = private$.hyperparams$theta_m[which(private$.hyperparams$region == private$.filteredData[f_r_index,]$region)]
       this_theta_M = private$.hyperparams$theta_M[which(private$.hyperparams$region == private$.filteredData[f_r_index,]$region)]
       
-      mu_r = sample(this_mu_m:this_mu_M,1)# draw peak week
+      mu_r = sample(this_mu_m:this_mu_M,1) # draw peak week
       theta_r = runif(1,this_theta_m, this_theta_M) # draw peak height
       
       # Stuff that's not region-specific
       b_r = private$.hyperparams$b_r[1]; # find cdc baseline wILI for the year - not implemented yet
       nu_r = runif(1,private$.hyperparams$nu_m[1], private$.hyperparams$nu_M[1]) # draw pacing
       
-      # TODO I'm not sure if this is supposed to be region-specific? Or if it's also random
-      # NOTE: Josh modified line below; please check that it's behaving as advised.
       sigmas[k,1] <- sample(private$.fitSigma[private$.fitSigma$region == private$.filteredData[f_r_index,]$region,1], size = 1, replace = TRUE)
-      # print(paste0("sigmas [k,1] is ",sigmas[k,1]))
       
       if (private$.verbose == T)
       {
@@ -270,7 +247,7 @@ EmpiricalBayesModel <- R6Class(
         weight = 0
         for (k in 1:length(yrs_curr))
         {
-          weight = weight+log(1.1^k*dnorm(yrs_curr[k],mean=frs_curr[k],sd=5*sigma))
+          weight = weight+log(1.1^k*dnorm(yrs_curr[k],mean=frs_curr[k],sd=8*sigma))
         }
         
         v_1 = c()
@@ -290,84 +267,27 @@ EmpiricalBayesModel <- R6Class(
     
   },
   
-  .calculateForecast = function(){
+  .calculateForecast = function(startingWeek){
     
     print("[.calculateForecast]")
     private$.posterior = data.frame(matrix(NA, private$.nTransformations, 52));
     
-    # posterior CI's
-    private$.posterior50Lower = data.frame(matrix(NA, private$.nTransformations, 52));
-    private$.posterior50Upper = data.frame(matrix(NA, private$.nTransformations, 52));
-    private$.posteriorMedian = data.frame(matrix(NA, private$.nTransformations, 52));
-    
-    forecast = data.frame(matrix(NA, nrow(private$.currentData$mat), 52));
-    variance = data.frame(matrix(NA, nrow(private$.currentData$mat), 52));
-    
-    forecastMedian = data.frame(matrix(NA, nrow(private$.currentData$mat), 52));
-    forecast50Lower = data.frame(matrix(NA, nrow(private$.currentData$mat), 52));
-    forecast50Upper = data.frame(matrix(NA, nrow(private$.currentData$mat), 52));
-    
-    # within each region, normalize the weight and multiply it by the unweighted posterior
     for(i in c(1:nrow(private$.currentData$mat)))
     {
-      
       post_inx = which(private$.priorRegions == private$.currentData$rnames[i])
-      
-      #private$.weights = private$.weights/sum(na.omit(private$.weights))
       private$.weights[post_inx] = private$.weights[post_inx]/sum(private$.weights[post_inx])
       
-      ## TRYING SOMETHING
-      wMedian = quantile(private$.weights[post_inx],0.5)
-      w50Lower = quantile(private$.weights[post_inx],0.25)
-      w50Upper = quantile(private$.weights[post_inx],0.75)
-      
-      print(paste("Weight sum for region: ", private$.currentData$rnames[i]))
-      print(sum(private$.weights[post_inx]))
-      for(j in c(1:length(post_inx))){
-        private$.posterior[post_inx[j],] = private$.weights[post_inx[j],1] * private$.unweightedPosterior[post_inx[j],]
-        # median
-        private$.posteriorMedian[post_inx[j],] = wMedian * private$.unweightedPosterior[post_inx[j],]
-        # 50% CI
-        private$.posterior50Lower[post_inx[j],] = w50Lower * private$.unweightedPosterior[post_inx[j],]
-        private$.posterior50Upper[post_inx[j],] = w50Upper * private$.unweightedPosterior[post_inx[j],]
+      for (j in c(1:private$.nSimulations))
+      {
+        importanceWeightedIndex = rmultinom(1,1,private$.weights[post_inx])
+        iwi = which(importanceWeightedIndex==1)
+        private$.forecast[i,,j] <- t(private$.unweightedPosterior[iwi,])[,1]; 
       }
-      
-      forecastRow = as.matrix(apply(private$.posterior[post_inx,],2,sum))
-      forecast[i,] = forecastRow; 
-      
-      varianceRow = as.matrix(apply(private$.unweightedPosterior[post_inx,], 2, private$.weightedVariance, wts = private$.weights[post_inx]))
-      variance[i,] = varianceRow;
-      
-      forecastMedianRow = as.matrix(apply(private$.posteriorMedian[post_inx,],2,sum))
-      forecastMedian[i,] = forecastMedianRow
-      
-      forecast50LRow = as.matrix(apply(private$.posterior50Lower[post_inx,],2,sum))
-      forecast50Lower[i,] = forecast50LRow
-      forecast50URow = as.matrix(apply(private$.posterior50Upper[post_inx,],2,sum))
-      forecast50Upper[i,] = forecast50URow
     }
     
-    
     # store it all in private$.forecast, where rows are regions and cols are weighted avg.
-    private$.forecast = IncidenceMatrix$new(data = forecast);
-    # trying 50% CI
-    private$.forecastMedian = IncidenceMatrix$new(data = forecastMedian)
-    private$.forecast50LB = IncidenceMatrix$new(data = forecast50Lower)
-    private$.forecast50UB = IncidenceMatrix$new(data = forecast50Upper)
-    
-    private$.forecast$rnames = private$.currentData$rnames;
-    private$.forecastMedian$rnames = private$.currentData$rnames;
-    private$.forecast50LB$rnames = private$.currentData$rnames;
-    private$.forecast50UB$rnames = private$.currentData$rnames;
-    
-    private$.forecastObject = ForecastFramework::Forecast$new(data = forecast)
-    
-    private$.variance = IncidenceMatrix$new(data = variance);
-    private$.variance$rnames = private$.currentData$rnames;
-    
-    private$.ciLower = private$.forecast$mat - 1.96*sqrt(private$.variance$mat);
-    private$.ciUpper = private$.forecast$mat + 1.96*sqrt(private$.variance$mat);
-    
+    private$.forecastSIM = SimulatedIncidenceMatrix$new(data = private$.forecast[,(startingWeek+1):(startingWeek+private$.steps),]);
+    private$.forecastSIM$rnames = as.factor(private$.regions);
   }
   
 ),
@@ -377,10 +297,11 @@ public = list(
   # attributes
   data = NULL,
   newdata = NULL,
-  
+  fit_once = T,
   # methods
   
-  fit = function(fitData,n=1000, steps=6,verbose=F){
+  # fit method: nPrior is the size of the prior, steps is the number of weeks ahead.
+  fit = function(fitData, nTransformations=1000, steps=6,verbose=F){
     
     print("[fit]")
     
@@ -388,7 +309,7 @@ public = list(
     if("fit" %in% private$.debug){browser()};
     
     # assign private attribute for number of transformations and historical data
-    private$.nTransformations <- n;
+    private$.nTransformations <- nTransformations;
     private$.historicalData <- fitData;
     
     # call .extractShapesAndHyperparams
@@ -399,22 +320,38 @@ public = list(
     
   },
   
-  forecast = function(newdata, steps = 6){
+  forecast = function(newdata, steps = 6,nSimulations = 1000){
     
     print("[forecast]")
     # subset the data to current season only
-    last_sw = tail(newdata$colData$season.week,1)
-    first_inx = ncol(newdata$mat) - last_sw
-    last_inx = ncol(newdata$mat)
+    last_sw = tail(newdata$colData$season.week,1);
+    first_inx = ncol(newdata$mat) - last_sw + 1;
+    last_inx = ncol(newdata$mat);
     newdata$subset(cols = first_inx:last_inx);
-    private$.currentData = newdata
-    
+    private$.currentData = newdata;
+    private$.nSimulations = nSimulations;
+    print(paste("[forecast] Generating forecast from season-week:",last_sw))
     # call .generatePosterior
-    private$.generatePosterior();
     # call .calculateForecast()
-    private$.calculateForecast();
-    # return forecast object
-    return(private$.forecastObject);
+    if(last_sw == 52) 
+      {
+        print("[forecast] Warning: Boundary effect. Returning the observed data from season-weeks 45-52. 'To do then now would be retro. To do then then was very now-tro. - Harry Shearer'")
+        
+        for(i in c(1:nrow(newdata$mat)))
+        {
+          private$.forecast = array(c(rep(NA,16), rep(NA,52), rep(NA,nSimulations)),dim=c(16,52,nSimulations))
+          for(j in c(1:nSimulations)) private$.forecast[i,,j] = newdata$mat[i,]
+        }
+        private$.forecastSIM = SimulatedIncidenceMatrix$new(data = private$.forecast[,47:52,]);
+        private$.forecastSIM$rnames = as.factor(private$.regions);
+        return(IncidenceForecast$new(private$.forecastSIM, forecastTimes = rep(TRUE, steps)))
+      }
+    
+    else if(52 - last_sw < steps) print(paste(paste("[forecast] Warning: Boundary effect. Returning forecast for week", (51 - steps)),"to 52."))
+    private$.generatePosterior();
+    private$.calculateForecast(min(last_sw, 51-steps));
+    # return IncidenceForecast object
+    return(IncidenceForecast$new(private$.forecastSIM, forecastTimes = rep(TRUE, steps)));
     
   },
   
@@ -423,6 +360,7 @@ public = list(
     plot(private$.prior[indices[1],], xlim=c(0,52),ylim=c(0, max(private$.prior[indices,])),type="l",col=rainbow(length(indices))[1],xlab = "Season Week",ylab="wILI", main="Prior");
     for(i in c(2:length(indices))) {lines(private$.prior[indices[i],],col=rainbow(length(indices))[i])};
   },
+  
   plotPosterior = function(indices=c(1:nrow(private$.posterior))){
     d = as.matrix(private$.posterior)
     plot(d[indices[1],], xlim=c(0,52),ylim=c(0,50),type="l",col=rainbow(length(indices))[1],xlab = "Season Week",ylab="wILI", main="Posterior");
@@ -440,15 +378,8 @@ public = list(
   getUnweightedPosterior = function(){return(private$.unweightedPosterior)},
   getPosterior = function(){return(private$.posterior)},
   getForecast = function(){return(private$.forecast)},
-  getForecast50LB = function(){return(private$.forecast50LB)},
-  getForecast50UB = function(){return(private$.forecast50UB)},
-  getForecastMedian = function(){return(private$.forecastMedian)},
-  getTestData = function(){return(private$.testData)},
   getRegions = function(){return(private$.regions)},
   getPriorRegions = function(){return(private$.priorRegions)},
-  getVariance = function(){return(private$.variance)},
-  getCILower = function(){return(private$.ciLower)},
-  getCIUpper = function(){return(private$.ciUpper)},
   initialize = function(){}
 )
 )
