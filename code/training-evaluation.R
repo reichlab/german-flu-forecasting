@@ -8,8 +8,8 @@ rm(list = ls()) ## protecting against loading stray .RData files
 ##  1. DEFINE THE MODEL_ABBR TO BE THE NAME OF YOUR MODEL
 ##  2. ENSURE THAT YOUR MODEL FOLLOWS THE GUIDELINES IN models/README.md
 
-#MODEL_ABBR <- "DL4EPI"
-MODEL_ABBR <- "SIRS_EAKF_model"
+MODEL_ABBR <- "EmpiricalBayesModel"
+
 
 library(ForecastFramework)
 library(dplyr)
@@ -59,7 +59,7 @@ if(this_model$fit_once){
         tmp_forecast_data <- training_data$subset(cols = first_col_idx:last_col_idx, mutate = FALSE)
         
         ## make forecast
-        tmp_forecast <- this_model$forecast(tmp_forecast_data, steps=STEPS)
+        tmp_forecast <- this_model$forecast(tmp_forecast_data, steps=STEPS, nSimulations = 30)
         
         ## create, rbind tidy forecast data
         tmp_fcast_data <- gather_forecast(tmp_forecast, tmp_timezero)
