@@ -24,8 +24,6 @@ source(filename)
 
 ### load training data
 training_data <- readRDS("data/training_data.rds")
-initial <- as.matrix(read.csv("data/initials_new.csv"), header = TRUE)
-training_data$metaData$initial <- initial
 first_season_for_fitting <- "2010/2011"
 eval_season <- "2015/2016"
 last_season <- "2014/2015"
