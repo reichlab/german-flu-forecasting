@@ -12,9 +12,7 @@ library(R6)
 library(tidyverse)
 library(hetGP)
 
-source("R/ContestModel.R")
-
-HetGPModel <- R6Class(
+hetGPModel <- R6Class(
   inherit = ContestModel,
   private = list(
     .data = NULL,        ## every model should have this
