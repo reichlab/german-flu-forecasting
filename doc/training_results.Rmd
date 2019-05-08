@@ -1,0 +1,73 @@
+---
+title: "Summary of training phase forecasting results: German flu forecasting"
+author: "Nicholas Reich"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output: 
+  pdf_document: 
+    fig_caption: yes
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning=FALSE, message=FALSE)
+```
+
+```{r}
+library(tidyverse)
+library(ForecastFramework)
+theme_set(theme_bw())
+training_data <- readRDS("data/training_data.rds")
+train_dat_long <- gather_data(training_data)
+```
+
+
+```{r}
+model_names <- tools::file_path_sans_ext(list.files(path = "models", pattern = "*.R"))
+model_names <- model_names[-which(model_names=="ContestModel")]
+```
+
+
+
+## Overview 
+
+This document summarizes the performance of time-series forecasting models developed by UMass-Amherst Biostatistics PhD students for a PhD Seminar. 
+The goal was to create forecasting models that accurately forecasted influenza incidence in Germany. We used as the gold-standard data a time series obtained from the Robert Koch Institut (RKI), a national public health agency in Germany. The training dataset is shown below.
+
+```{r train-dat, fig.cap="Training data, stratified by state, with the one season evaluated for "training" showed in darker color", }
+ggplot(data=train_dat_long, aes(x=season_week, y=value, group=season)) +
+    geom_line(alpha=.3) + ylab("incidence (per 100,000 population)") +
+    geom_line(data=filter(train_dat_long, season=="2015/2016")) +
+    facet_wrap(.~location) 
+```
+
+
+
+## Results across all regions
+```{r, compile-all-results}
+for(model in model_names){
+    fname <- paste0("results/", model, "-training-results.csv")
+    read_csv(fname)
+    
+}
+data_forecasted <- read_csv("results/hetGPModel-training-results.csv") %>%
+#data_forecasted <- fcast_data %>%
+    left_join(dplyr::select(data_forecasted_from, location, date, value)) %>%
+    rename(truth=value) %>%
+    mutate(
+        bias = pred_median - truth,
+        ci50_cov = truth>pred_50_lb & truth<pred_50_ub,
+        ci80_cov = truth>pred_80_lb & truth<pred_80_ub,
+        ci95_cov = truth>pred_95_lb & truth<pred_95_ub)
+
+## overall summary
+colMeans(dplyr::select(data_forecasted, bias, starts_with("ci")), na.rm=TRUE)
+
+
+```
+
+
+
+## Results by region
+
+

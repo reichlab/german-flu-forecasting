@@ -2,12 +2,24 @@
 ## Nicholas Reich
 ## April 2019
 
-library(ForecastFramework)
+rm(list = ls()) ## protecting against loading stray .RData files
 
-## source model code
-## TODO: need to generalize reference to model$new() below 
+## TO USE THIS CODE, PLEASE :
+##  1. DEFINE THE MODEL_ABBR TO BE THE NAME OF YOUR MODEL
+##  2. ENSURE THAT YOUR MODEL FOLLOWS THE GUIDELINES IN models/README.md
+
+MODEL_ABBR <- "hetGPModel"
+
+library(ForecastFramework)
+library(dplyr)
+source("code/forecast-utils.R") ## helper functions for tidying forecast data
+
+STEPS <- 6
+
+## source model code 
 source("models/ContestModel.R")
-source("models/sarimaTD-model.R")
+filename <- paste0("models/", MODEL_ABBR, ".R")
+source(filename)
 
 ### load testing data
 testing_data <- readRDS("data/testing_data.rds")
@@ -15,59 +27,93 @@ testing_seasons <- paste0(2016:2018, "/", 2017:2019)
 first_season_for_fitting <- "2010/2011"
 
 ## TODO: REMOVE once the whole script is working
-testing_data$subset(rows=13:15)
+## testing_data$subset(rows=13:15)
 
-### testing process for once-fit model
-## foreach season s in testing seasons
-for(i in 1:length(testing_seasons)) {
-    this_season <- testing_seasons[i]
-    last_season <- paste0(as.numeric(substr(this_season, 1, 4))-1, "/", substr(this_season, 1, 4))
-    
-    ## subset data up to (not inclusive) week one of season s
-    first_fitting_week <- list(season=first_season_for_fitting, season.week=1)
-    last_fitting_week <- list(season=this_season, season.week=6) ## the week at which data was forecasted
-    first_col_idx <- which(testing_data$colData$season.week==first_fitting_week$season.week & testing_data$colData$season==first_fitting_week$season)
-    last_col_idx <- which(testing_data$colData$season.week==last_fitting_week$season.week & testing_data$colData$season==last_fitting_week$season)
-    testing_data$subset(cols = first_col_idx:last_col_idx)
-    
-    ##  initialize model
-    this_model <- SARIMATD1Model$new()
-    
-    ##  fit model to data
-    this_model$fit(testing_data)
-    
-    ##   foreach week in season s
-    for(sw in 1:52){
-        ## make data to forecast from
-        ## make forecast
-        ## rbind tidy forecast data
+eval(parse(text=paste0("this_model <- ", MODEL_ABBR, "$new()")))
+
+### testing evaluation for once-fit model
+if(this_model$fit_once){
+    last_season <- "2015/2016"
+    for(season in testing_seasons){
+        ## subset data up to (not inclusive) week one of season s
+        first_fitting_week <- list(season=first_season_for_fitting, season.week=1)
+        last_fitting_week <- list(season=last_season, season.week=52)
+        first_col_idx <- which(testing_data$colData$season.week==first_fitting_week$season.week & testing_data$colData$season==first_fitting_week$season)
+        last_col_idx <- which(testing_data$colData$season.week==last_fitting_week$season.week & testing_data$colData$season==last_fitting_week$season)
+        once_testing_data <- testing_data$subset(cols = first_col_idx:last_col_idx, mutate = FALSE)
+        
+        ##  initialize model
+        eval(parse(text=paste0("this_model <- ", MODEL_ABBR, "$new()")))
+        
+        ##  fit model to data
+        this_model$fit(once_testing_data)
+        
+        ##   foreach week in season s, make forecast and save
+        for(sw in 1:52){ 
+            ## make data to forecast from
+            last_col_idx <- which(testing_data$colData$season.week==sw & testing_data$colData$season==season)
+            tmp_timezero <- testing_data$colData$week.end.date[last_col_idx]
+            tmp_forecast_data <- testing_data$subset(cols = first_col_idx:last_col_idx, mutate = FALSE)
+            
+            ## make forecast
+            tmp_forecast <- this_model$forecast(tmp_forecast_data, steps=STEPS)
+            
+            ## create, rbind tidy forecast data
+            tmp_fcast_data <- gather_forecast(tmp_forecast, tmp_timezero)
+            if(exists("fcast_data")) {
+                fcast_data <- bind_rows(fcast_data, tmp_fcast_data)
+            } else {
+                fcast_data <- tmp_fcast_data
+            }
+        }
+        last_season <- season
     }
 }
 
-### testing process for each-fit model
-## foreach season s in testing seasons
-##   foreach week in season s
-##      fit model to data up to (not inclusive) week 1 of testing season s
-##      make forecast
-##      rbind tidy forecast data
+if(!this_model$fit_once){
+    ### testing process for each-fit model
+    last_season <- "2015/2016"
+    for(season in testing_seasons){
+        ## establish the first week to fit the model to
+        first_fitting_week <- list(season=first_season_for_fitting, season.week=1)
+        last_fitting_week <- list(season=last_season, season.week=52)
+        first_col_idx <- which(testing_data$colData$season.week==first_fitting_week$season.week & testing_data$colData$season==first_fitting_week$season)
+        
+        ##   foreach week in season s, 
+        ##      subset data, fit model, make forecast and append
+        for(sw in 1:52){ 
+            
+            # last week for fitting model (MINUS 1 TO BE NOT INCLUSIVE!)
+            last_col_idx <- which(testing_data$colData$season.week==sw & testing_data$colData$season==season) - 1
+            each_testing_data <- testing_data$subset(cols = first_col_idx:last_col_idx, mutate = FALSE)
+            
+            ##  initialize model
+            eval(parse(text=paste0("this_model <- ", MODEL_ABBR, "$new()")))
+            
+            ##  fit model to data
+            this_model$fit(each_testing_data)
+            
+            ## make data to forecast from
+            tmp_timezero <- list(
+                year = testing_data$colData$year[last_col_idx], 
+                epiweek = testing_data$colData$week[last_col_idx] 
+            )
+            
+            ## make forecast
+            tmp_forecast <- this_model$forecast(each_testing_data, steps=STEPS)
+            
+            ## create, rbind tidy forecast data
+            tmp_fcast_data <- gather_forecast(tmp_forecast, tmp_timezero)
+            if(exists("fcast_data")) {
+                fcast_data <- bind_rows(fcast_data, tmp_fcast_data)
+            } else {
+                fcast_data <- tmp_fcast_data
+            }
+        }
+        last_season <- season
+    }
+}
 
-
-## subset training data
-first_training_week <- list(year=2010, epiweek=30)
-forecast_timezero <- list(year=2016, epiweek=6) ## the week at which data was forecasted
-first_col_idx <- which(training_data$colData$week==first_training_week$epiweek & training_data$colData$year==first_training_week$year)
-last_col_idx <- which(training_data$colData$week==forecast_timezero$epiweek & training_data$colData$year==forecast_timezero$year)
-
-training_data$subset(rows=13:16, cols = first_col_idx:last_col_idx)
-
-### fit
-sarimaTDmodel$fit(training_data)
-
-### forecast
-steps <- 15 # forecast ahead `step` number of weeks
-forecast_X <- sarimaTDmodel$forecast(training_data, steps = steps)
-
-### tidy up the data
-data_forecasted_from <- gather_data(training_data)
-fcast_df <- gather_forecast(forecast_X, timezero = forecast_timezero)
+tmp_filename <- paste0("results/", MODEL_ABBR, "-testing-results.csv")
+write.csv(fcast_data, file=tmp_filename, quote=FALSE, row.names = FALSE)
 

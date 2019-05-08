@@ -42,6 +42,8 @@ gather_data <- function(incmat) {
     require(MMWRweek)
     incdat <- data.frame(as.table(t(incmat$mat))) %>%
         rename(date = Var1, location = Var2, value=Freq) %>%
-        mutate(date = as.Date(date))
+        mutate(date = as.Date(date),
+               season = rep(incmat$colData$season, incmat$nrow),
+               season_week = rep(incmat$colData$season.week, incmat$nrow))
     return(incdat) 
 }
