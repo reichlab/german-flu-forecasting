@@ -10,6 +10,7 @@ rm(list = ls()) ## protecting against loading stray .RData files
 
 MODEL_ABBR <- "EmpiricalBayesModel"
 
+
 library(ForecastFramework)
 library(dplyr)
 source("code/forecast-utils.R") ## helper functions for tidying forecast data
@@ -23,6 +24,8 @@ source(filename)
 
 ### load training data
 training_data <- readRDS("data/training_data.rds")
+initial <- as.matrix(read.csv("data/initials_new.csv"), header = TRUE)
+training_data$metaData$initial <- initial
 first_season_for_fitting <- "2010/2011"
 eval_season <- "2015/2016"
 last_season <- "2014/2015"
