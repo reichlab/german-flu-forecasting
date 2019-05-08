@@ -8,7 +8,8 @@ rm(list = ls()) ## protecting against loading stray .RData files
 ##  1. DEFINE THE MODEL_ABBR TO BE THE NAME OF YOUR MODEL
 ##  2. ENSURE THAT YOUR MODEL FOLLOWS THE GUIDELINES IN models/README.md
 
-MODEL_ABBR <- "DL4EPI"
+#MODEL_ABBR <- "DL4EPI"
+MODEL_ABBR <- "SIRS_EAKF_model"
 
 library(ForecastFramework)
 library(dplyr)
@@ -23,6 +24,8 @@ source(filename)
 
 ### load training data
 training_data <- readRDS("data/training_data.rds")
+initial <- as.matrix(read.csv("data/initials_new.csv"), header = TRUE)
+training_data$metaData$initial <- initial
 first_season_for_fitting <- "2010/2011"
 eval_season <- "2015/2016"
 last_season <- "2014/2015"
