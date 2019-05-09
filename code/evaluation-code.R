@@ -5,7 +5,7 @@
 rm(list = ls()) ## protecting against loading stray .RData files
 
 ## TO USE THIS CODE, PLEASE :
-##  1. DEFINE THE MODEL_ABBR TO BE THE NAME OF YOUR MODEL
+##  1. RUN THIS SCRIPT FROM COMMAND LINE USING `Rscript code/evaluation-code.R "EmpiricalBayes"` where you insert your model name in quotes.
 ##  2. ENSURE THAT YOUR MODEL FOLLOWS THE GUIDELINES IN models/README.md
 
 args <- commandArgs(trailingOnly = TRUE)
