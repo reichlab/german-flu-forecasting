@@ -1,4 +1,6 @@
-EmpiricalBayesModel <- R6Class(
+## requires installation of genlasso from https://cran.r-project.org/src/contrib/Archive/genlasso/
+
+EmpiricalBayes <- R6Class(
   inherit = ContestModel, # or AggregateModel
   private = list(
   

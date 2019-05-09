@@ -13,7 +13,7 @@ library(sarimaTD)
 # More information about sarimaTD in https://github.com/reichlab/sarimaTD 
 # Integrated into ForecastFramework by: Katie House, 6/22/2018
 
-sarimaTDModel <- R6Class(
+sarimaTD <- R6Class(
     inherit = ContestModel,
     private = list(
         .data = NULL,        ## every model should have this
