@@ -8,7 +8,11 @@ rm(list = ls()) ## protecting against loading stray .RData files
 ##  1. DEFINE THE MODEL_ABBR TO BE THE NAME OF YOUR MODEL
 ##  2. ENSURE THAT YOUR MODEL FOLLOWS THE GUIDELINES IN models/README.md
 
-MODEL_ABBR <- "hetGPModel"
+args <- commandArgs(trailingOnly = TRUE)
+MODEL_ABBR <- args[1]
+
+# MODEL_ABBR <- "EmpiricalBayes"
+
 
 library(ForecastFramework)
 library(dplyr)

@@ -9,7 +9,7 @@ gather_forecast <- function(fcast, timezero) {
     require(tidyr)
     preds_df <- data.frame(as.table(t(fcast$data$mat))) %>%
         rename(step = Var1, location = Var2) %>%
-        select(-Freq) %>% ## not sure what this column/value represents
+        dplyr::select(-Freq) %>% ## not sure what this column/value represents
         mutate(
             timezero = timezero,
             step = as.numeric(step),

@@ -11,7 +11,7 @@ rm(list = ls()) ## protecting against loading stray .RData files
 
 args <- commandArgs(trailingOnly = TRUE)
 MODEL_ABBR <- args[1]
-#MODEL_ABBR <- "hetGPModel"  ## SET DIRECTLY FOR LOCAL RUNNING
+# MODEL_ABBR <- "EmpiricalBayes"  ## SET DIRECTLY FOR LOCAL RUNNING
 
 
 library(ForecastFramework)
