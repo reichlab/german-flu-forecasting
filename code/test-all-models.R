@@ -15,6 +15,6 @@ model_names <- c(
 
 # run each model one at a time
 foreach(model = model_names) %dopar% {
-    rcmd <- paste0("Rscript code/tmp.R \"", model, "\"")
+    rcmd <- paste0("Rscript code/evaluation-code.R > evaluation-code-", model, ".Rout \"", model, "\"")
     system(rcmd)
     }
