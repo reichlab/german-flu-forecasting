@@ -5,10 +5,13 @@
 rm(list = ls()) ## protecting against loading stray .RData files
 
 ## TO USE THIS CODE, PLEASE :
-##  1. DEFINE THE MODEL_ABBR TO BE THE NAME OF YOUR MODEL
+##  1. RUN THIS SCRIPT FROM COMMAND LINE USING `Rscript code/evaluation-code.R "EmpiricalBayes"` where you insert your model name in quotes.
 ##  2. ENSURE THAT YOUR MODEL FOLLOWS THE GUIDELINES IN models/README.md
 
-MODEL_ABBR <- "EmpiricalBayesModel"
+
+args <- commandArgs(trailingOnly = TRUE)
+MODEL_ABBR <- args[1]
+# MODEL_ABBR <- "EmpiricalBayes"  ## SET DIRECTLY FOR LOCAL RUNNING
 
 
 library(ForecastFramework)
@@ -24,8 +27,6 @@ source(filename)
 
 ### load training data
 training_data <- readRDS("data/training_data.rds")
-initial <- as.matrix(read.csv("data/initials_new.csv"), header = TRUE)
-training_data$metaData$initial <- initial
 first_season_for_fitting <- "2010/2011"
 eval_season <- "2015/2016"
 last_season <- "2014/2015"
@@ -59,7 +60,7 @@ if(this_model$fit_once){
         tmp_forecast_data <- training_data$subset(cols = first_col_idx:last_col_idx, mutate = FALSE)
         
         ## make forecast
-        tmp_forecast <- this_model$forecast(tmp_forecast_data, steps=STEPS, nSimulations = 30)
+        tmp_forecast <- this_model$forecast(tmp_forecast_data, steps=STEPS)
         
         ## create, rbind tidy forecast data
         tmp_fcast_data <- gather_forecast(tmp_forecast, tmp_timezero)

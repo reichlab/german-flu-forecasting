@@ -57,10 +57,13 @@ cdata <- list(
 ## make metadata list
 adjacency_mat <- read.csv("data/GER_states_adjacency.csv", row.names = 1)
 humidity_dat <- read.csv("data/AbsHumidity.csv", row.names = 1)
+initial <- as.matrix(read.csv("data/initials_new.csv"), header = TRUE)
+
 metaData <- list(
     adjacency_mat = adjacency_mat,
     humidity_dat = humidity_dat,
-    max.year.time = 365
+    max.year.time = 365,
+    initial = initial
 )
 
 ## create objects

@@ -260,7 +260,7 @@ training_data <- readRDS("data/training_data.rds")
 initial <- as.matrix(read.csv("data/initials_new.csv"), header = TRUE)
 training_data$metaData$initial <- initial
 
-SIRS_EAKF_model <- R6Class(
+SIRS_EAKF <- R6Class(
   inherit = ContestModel,
   
   private = list(

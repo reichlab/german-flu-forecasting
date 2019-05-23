@@ -1,0 +1,119 @@
+---
+author: "Nicholas Reich"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+header-includes:
+- \usepackage{booktabs}
+- \usepackage{longtable}
+- \usepackage{array}
+- \usepackage{multirow}
+- \usepackage{wrapfig}
+- \usepackage{float}
+- \usepackage{colortbl}
+- \usepackage{pdflscape}
+- \usepackage{tabu}
+- \usepackage{threeparttable}
+- \usepackage{threeparttablex}
+- \usepackage[normalem]{ulem}
+- \usepackage{makecell}
+- \usepackage{xcolor}
+title: 'Summary of training phase forecasting results: German flu forecasting'
+output: 
+  pdf_document:
+    fig_caption: yes
+editor_options:
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning=FALSE, message=FALSE)
+```
+
+```{r}
+library(tidyverse)
+library(ForecastFramework)
+library(kableExtra)
+source("../code/forecast-utils.R")
+
+theme_set(theme_bw())
+
+training_data <- readRDS("../data/training_data.rds")
+train_dat_long <- gather_data(training_data)
+```
+
+
+```{r}
+model_names <- tools::file_path_sans_ext(list.files(path = "../models", pattern = "*.R"))
+model_names <- model_names[-which(model_names=="ContestModel")]
+```
+
+
+
+## Overview 
+
+This document summarizes the performance of time-series forecasting models developed by UMass-Amherst Biostatistics PhD students for a PhD Seminar. 
+The goal was to create forecasting models that accurately forecasted influenza incidence in Germany. We used as the gold-standard data a time series obtained from the Robert Koch Institut (RKI), a national public health agency in Germany. The training dataset is shown below.
+
+```{r train-dat, fig.cap="Training data, stratified by state, with the one season evaluated for training showed in darker color", eval=FALSE}
+ggplot(data=train_dat_long, aes(x=season_week, y=value, group=season)) +
+    geom_line(alpha=.3) + ylab("incidence (per 100,000 population)") +
+    geom_line(data=filter(train_dat_long, season=="2015/2016")) +
+    facet_wrap(.~location) 
+```
+
+
+
+## Results across all regions
+```{r, compile-all-results, results='asis'}
+result_filenames <- list.files(path = "../results", pattern = "*training-results.csv")
+data_path <- "../results"
+all_data <- data_frame(filename = result_filenames) %>% # create a data frame
+                                         # holding the file names
+  mutate(file_contents = map(filename,          # read files into
+           ~ read_csv(file.path(data_path, .))) # a new data column
+        ) %>%
+  unnest() %>%
+  separate(filename, c("model"), sep="-")
+
+
+data_forecasted <- all_data %>%
+#data_forecasted <- fcast_data %>%
+    left_join(dplyr::select(train_dat_long, location, date, value)) %>%
+    rename(truth=value) %>%
+    mutate(
+        bias = pred_median - truth,
+        ci50_cov = truth>pred_50_lb & truth<pred_50_ub,
+        ci80_cov = truth>pred_80_lb & truth<pred_80_ub,
+        ci95_cov = truth>pred_95_lb & truth<pred_95_ub) 
+
+## overall summary
+overall_summary <- data_forecasted %>% 
+  dplyr::select(model, bias, starts_with("ci")) %>%
+  group_by(model) %>%
+  summarize(
+    avg_bias = mean(bias, na.rm=TRUE),
+    ci50_cov = mean(ci50_cov, na.rm=TRUE),
+    ci80_cov = mean(ci80_cov, na.rm=TRUE),
+    ci90_cov = mean(ci95_cov, na.rm=TRUE))
+  
+kable(overall_summary, "latex", booktabs = T, digits = 2) %>%
+  kable_styling(latex_options = "striped")
+
+```
+
+
+
+## Results by region
+```{r, regional-summary}
+## overall summary
+regional_bias_summary <- data_forecasted %>% 
+  dplyr::select(model, location, bias, starts_with("ci")) %>%
+  group_by(model, location) %>%
+  summarize(avg_bias = mean(bias, na.rm=TRUE)) %>%
+  spread(model, avg_bias)
+  
+kable(regional_bias_summary, "latex", booktabs = T, digits = 2) %>%
+  kable_styling(latex_options = "striped")
+
+```
+
+
