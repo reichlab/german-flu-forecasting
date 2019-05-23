@@ -38,23 +38,9 @@ EmpiricalBayes <- R6Class(
   .forecastSIM = NULL,
   .gatherData = function(incmat){
     print("[.gatherData]")
-    incdat <- data.frame(as.table(t(incmat))) %>% #$mat))) %>%
-      rename(textdate = Var1, location = Var2, value=Freq) %>%
-      mutate(
-        year = as.numeric(MMWRweek(textdate)$MMWRyear),
-        epiweek = as.numeric(MMWRweek(textdate)$MMWRweek),
-        date = textdate
-      ) %>% 
-      filter(!(year == 2015 & epiweek == 26)) %>% 
-      filter(!(year == 2009 & epiweek == 26)) %>% 
-      filter(!(year == 2004 & epiweek == 26)) %>% 
-      mutate(season_week = epiweek - 26) %>% 
-      mutate(season_year = as.character(year))
-    
-    incdat$season_week <- ifelse(incdat$season_week <= 0, incdat$season_week + 53, incdat$season_week)
-    incdat$season_year <- ifelse(incdat$season_week <= 26,
-                                 paste0(incdat$season_year, "-", as.character(as.numeric(incdat$season_year) + 1)),
-                                 paste0(as.character(as.numeric(incdat$season_year) - 1), "-", incdat$season_year))
+    incdat <- data.frame(as.table(t(incmat$mat)))%>% rename(textdate = Var1, location = Var2, value=Freq); 
+    incdat$season_year = rep(incmat$colData$season,16);
+    incdat$season_week = rep(incmat$colData$season.week,16);
     return(incdat) 
   },
 
@@ -67,7 +53,7 @@ EmpiricalBayes <- R6Class(
     
     training_data <- private$.historicalData;
     private$.regions <- training_data$rnames;
-    training_data_long <- private$.gatherData(incmat = training_data$mat)
+    training_data_long <- private$.gatherData(incmat = training_data)
     
     dat <- training_data_long  
 
