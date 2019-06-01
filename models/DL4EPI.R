@@ -8,11 +8,11 @@ library(reticulate)
 ## install python 3
 ## install pip
 ## install numpy using pip
-## install pytorch using pip
+## install torch using pip
 ## install 
 
 #SET THIS TO YOUR PYTHON VERSION
-use_python("/Users/gcgibson/anaconda/bin/python2.7")
+use_python("/usr/local/bin/python")
 source_python("./models/pyfiles/main.py")
 
 
@@ -63,7 +63,7 @@ DL4EPI <- R6Class(
         ## fit sarimaTD with 'fit_sarima()' from sarimaTD package
         ## fit_sarima() performs box-cox transformation and seasonal differencing
       is_this_nan <- NaN
-      for (step_ahead in 1:6){
+      for (step_ahead in 1:private$.STEPS){
         while(is.nan(is_this_nan )){
           is_this_nan <- train_dl(y_ts,adj_mat_fname,model_name,save_name,step_ahead,epochs)
         }
@@ -86,12 +86,12 @@ DL4EPI <- R6Class(
       adj_mat_fname <- "GER_states_adjacency.txt"
       
       # print (dim(newdata))
-      list_of_matrices <- array(rep(NA,16*6*private$.nsim),dim=c(16,6,private$.nsim))
+      list_of_matrices <- array(rep(NA,newdata$nrow*private$.STEPS*private$.nsim),dim=c(newdata$nrow,private$.STEPS,private$.nsim))
       tmp <- mytest(private$.data$mat,adj_mat_fname,model_name,save_name,1,t(newdata$mat))
       
      
       #for (sims in 1:100){
-        for (step_ahead in 1:6){
+        for (step_ahead in 1:private$.STEPS){
           tmp <- mytest(private$.data$mat,adj_mat_fname,model_name,save_name,step_ahead,t(newdata$mat))
           for (i_ in 1:length(tmp))
           list_of_matrices[i_,step_ahead,] <- rnorm(private$.nsim,tmp[i_],sd=1)
@@ -103,8 +103,7 @@ DL4EPI <- R6Class(
       private$output <- SimulatedIncidenceMatrix$new(list_of_matrices)
       return(IncidenceForecast$new(private$output, forecastTimes = rep(TRUE, steps)))
     },
-    initialize = function(period = 26, nsim=1000,STEPS=1) { 
-      ## this code is run during SARIMAModel$new()
+    initialize = function(period = 52, nsim=1000, STEPS=6) { 
       ## need to store these arguments within the model object
       private$.nsim <- nsim
       private$.period <- period
