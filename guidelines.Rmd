@@ -1,0 +1,75 @@
+---
+title: 'Forecasting Challenge: Influenza in Germany'
+author: "Nicholas Reich"
+date: "Updated April 8, 2019"
+output:
+  html_document:
+    toc: true
+    toc_float:
+      collapsed: false
+      smooth_scroll: false
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  message=FALSE, warning=FALSE,
+  fig.keep = "all",
+  fig.path = "figures/")
+```
+
+This document contains the guidelines for a forecasting challenge for the Biostatistics PhD Seminar in Spring 2019. I will periodically update this document as the challenge takes shape.
+
+## Challenge Overview
+I have obtained public surveillance data on influenza in Germany data from the Robert Koch Institut in Berlin. The data were downloaded from the public [SurvStat database](https://survstat.rki.de/Content/Query/Main.aspx). The data available in the repository currently represent weekly incident cases of influenza per 100,000 persons for each of the 16 states in Germany from 2001 through mid-2016. 
+
+Teams will use the `ForecastFramework` package to build a new model to forecast incidence. The goal will be to forecast short-term incidence targets (1- through 6-week-ahead influenza incidence) based on available data. 
+
+## The Dataset
+
+The training dataset has been saved as an `IncidenceMatrix` object and can be loaded as follows:
+```{r}
+library(tidyverse)
+library(ForecastFramework)
+theme_set(theme_bw())
+training_data <- readRDS("data/training_data.rds")
+```
+
+All code assumes that the current working directory is the home directory of the [GitHub repository](https://github.com/reichlab/german-flu-forecasting).
+
+I wrote a few helper functions to make it easier to use `ggplot` with `ForecastFramework`. Those functions can be loaded with the following code:
+```{r}
+source("code/forecast-utils.R")
+```
+
+One function, `gather_data()` makes an `IncidenceMatrix` into long form for plotting:
+```{r}
+train_dat_long <- gather_data(training_data)
+ggplot(data=train_dat_long, aes(x=date, y=value)) +
+    geom_line() + ylab("incidence (per 100,000 population)") +
+    facet_wrap(.~location) 
+```
+
+## Building a model
+`ForecastFramework` is a new package that is designed to facilitate comparison of different forecasting models for time-series data. I am still figuring out how to best use it, so we are learning together as we go in this part of the project. Using a `ForecastFramework` SARIMA model that my team has implemented in other settings, I wrote some code to fit the model, make a forecast, and plot it. This code is available in the `code/example-forecast-code.R` file. The models developed for this project will likely have some unique features that make them different from this particular SARIMA model, and I anticipate each team needing to adapt the code a bit to make your models work. Please be in touch with me to help trouble-shoot the model-building process.
+
+## Training your model
+
+I have made available a training dataset, and have held out data from the 2016/2017 through 2018/2019 influenza seasons. I will make this data available at a later time. For now, you may use the training data to set up or tune model parameters in any way that you like. For example, if you had the SARIMA model, you might run some cross-validation experiments to compare what transformations of the data to use and whether to use seasonal differencing or not. 
+
+You should determine how often your model will need to be refit to make predictions in the testing phase (perhaps it is just fit once? or once at the beginning of each season? or before each timepoint at which it forecasts?)
+
+## Testing phase evaluation
+
+I am planning to run a standardized set of testing phase evaluations. For the moment, you can assume that evaluation will be based on point estimate accuracy and 50% prediction interval coverage rates for each of 1- through 6-week-ahead forecasts of the influenza incidence levels.
+
+## Presentations
+
+Each team will present their model to the class in a 20 minute presentation in the last two weeks of class. The presentation should contain the following information:
+
+ - an overview of the method and how you implemented it
+ - challenges that arose in the `ForecastFramework` implementation
+ - details on how you "trained" your model on the Training phase data
+ - a quantitative evaluation on your model's forecasting performance in the training phase
+
+
